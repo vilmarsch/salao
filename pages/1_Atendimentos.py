@@ -8,24 +8,14 @@ from datetime import date
 # -----------------------------
 @st.cache_resource
 def get_conn():
-    return psycopg2.connect(
-        st.secrets["SUPABASE_DB_URL"]
-    )
-
+    return psycopg2.connect( st.secrets["SUPABASE_DB_URL"] )
 conn = get_conn()
 
 # -----------------------------
 # Dados auxiliares
 # -----------------------------
-clientes = pd.read_sql(
-    "SELECT nome FROM clientes ORDER BY nome",
-    conn
-)['nome'].tolist()
-
-servicos = pd.read_sql(
-    "SELECT nome, preco FROM servicos ORDER BY nome",
-    conn
-)
+clientes = pd.read_sql( "SELECT nome FROM clientes ORDER BY nome", conn )['nome'].tolist()
+servicos = pd.read_sql( "SELECT nome, preco FROM servicos ORDER BY nome", conn )
 
 st.title("📅 Atendimentos")
 
@@ -34,20 +24,13 @@ st.title("📅 Atendimentos")
 # -----------------------------
 with st.form("novo_atendimento"):
     data = st.date_input("Data", date.today())
+    hora = st.time_input("Hora", value=None)
     cliente = st.selectbox("Cliente", clientes)
     servico = st.selectbox("Serviço", servicos['nome'])
-
-    valor = float(servicos.loc[
-        servicos['nome'] == servico, 'preco'
-    ].values[0])
-
-    pagamento = st.selectbox(
-        "Forma de pagamento",
-        ["Dinheiro", "PIX", "Cartão"]
-    )
-
+    valor = float(servicos.loc[servicos['nome'] == servico, 'preco'].values[0])
+    pagamento = st.selectbox("Forma de pagamento", ["Dinheiro", "PIX", "Cartão"])
+    
     salvar = st.form_submit_button("Salvar")
-
     if salvar:
         with conn.cursor() as cur:
             cur.execute(
@@ -70,47 +53,22 @@ st.divider()
 # -----------------------------
 st.subheader("Histórico de Atendimentos")
 
-df = pd.read_sql(
-    "SELECT * FROM atendimentos ORDER BY data DESC",
-    conn
-)
+df = pd.read_sql("SELECT * FROM atendimentos ORDER BY data DESC",conn)
 
 if df.empty:
     st.info("Nenhum atendimento cadastrado")
 else:
-    selected_id = st.selectbox(
-        "Selecione um atendimento para editar/excluir",
-        df['id']
-    )
+    selected_id = st.selectbox("Selecione um atendimento para editar/excluir",df['id'])
 
     registro = df[df['id'] == selected_id].iloc[0]
 
     with st.form("editar_atendimento"):
-        data_e = st.date_input(
-            "Data",
-            pd.to_datetime(registro['data']).date()
-        )
-
-        cliente_e = st.selectbox(
-            "Cliente",
-            clientes,
-            index=clientes.index(registro['cliente'])
-        )
-
-        servico_e = st.selectbox(
-            "Serviço",
-            servicos['nome'],
-            index=servicos['nome'].tolist().index(registro['servico'])
-        )
-
-        valor_e = st.number_input(
-            "Valor",
-            value=float(registro['valor'])
-        )
-
-        pagamento_e = st.selectbox(
-            "Pagamento",
-            ["Dinheiro", "PIX", "Cartão"],
+        data_e = st.date_input("Data",pd.to_datetime(registro['data']).date())
+        # hora_e = st.time_input("Hora",value=None)
+        cliente_e = st.selectbox("Cliente",clientes,index=clientes.index(registro['cliente']))
+        servico_e = st.selectbox("Serviço",servicos['nome'],index=servicos['nome'].tolist().index(registro['servico']))
+        valor_e = st.number_input("Valor",value=float(registro['valor']))
+        pagamento_e = st.selectbox("Pagamento",["Dinheiro", "PIX", "Cartão"],
             index=["Dinheiro", "PIX", "Cartão"].index(registro['pagamento'])
         )
 
