@@ -13,5 +13,4 @@ df = pd.read_sql( "SELECT \"data\", \"hora\", cliente, servico, valor FROM atend
 df["data"] = pd.to_datetime(df["data"]).dt.strftime("%d/%m")
 df["hora"] = pd.to_datetime(df["hora"], format="%H:%M:%S").dt.strftime("%H:%M")
 df["valor"] = df["valor"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-df.reset_index(drop=True, inplace=True)
-st.dataframe(df, use_container_width=True)
+st.dataframe(df, hide_index=True)
