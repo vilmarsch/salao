@@ -36,10 +36,10 @@ with st.form("novo_atendimento"):
             cur.execute(
                 """
                 INSERT INTO atendimentos
-                (data, cliente, servico, valor, pagamento)
-                VALUES (%s, %s, %s, %s, %s)
+                (data, hora, cliente, servico, valor, pagamento)
+                VALUES (%s, %s, %s, %s, %s, %s)
                 """,
-                (data, cliente, servico, valor, pagamento)
+                (data, hora, cliente, servico, valor, pagamento)
             )
             conn.commit()
 
