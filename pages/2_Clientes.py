@@ -22,13 +22,10 @@ df = pd.read_sql( "SELECT * FROM clientes ORDER BY nome", conn )
 st.subheader("✏️ Editar / Excluir cliente")
 
 with st.form("form_editar_cliente"):
-
     cliente_id = st.selectbox( "Selecione o cliente", df["id"], format_func=lambda x: df.loc[df["id"] == x, "nome"].values[0] )
-
     nome_atual = df.loc[df["id"] == cliente_id, "nome"].values[0]
-
     novo_nome = st.text_input( "Nome do cliente", value=nome_atual )
-
+    
     col1, col2 = st.columns(2)
     with col1:
         btn_atualizar = st.form_submit_button("💾 Atualizar")
@@ -47,7 +44,7 @@ with st.form("form_editar_cliente"):
             conn.commit()
         st.success("Cliente excluído")
 
-# Leitura dos dados e exibiçã
+# Leitura dos dados e exibição
 st.subheader("📋 Lista de clientes")
 df = pd.read_sql( "SELECT * FROM clientes ORDER BY nome", conn )
 st.dataframe(df, use_container_width=True)

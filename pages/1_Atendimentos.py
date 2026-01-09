@@ -26,8 +26,8 @@ with st.form("novo_atendimento"):
     data = st.date_input("Data", date.today())
     hora = st.time_input("Hora", value=None)
     cliente = st.selectbox("Cliente", clientes)
-    servico = st.selectbox("Serviço", servicos['nome'])
-    valor = float(servicos.loc[servicos['nome'] == servico, 'preco'].values[0])
+    servico = st.multiselect("Serviço", servicos['nome'])
+    valor = sum(float(servicos.loc[servicos['nome'] == s, 'preco'].values[0]) for s in servico)
     pagamento = st.selectbox("Forma de pagamento", ["Dinheiro", "PIX", "Cartão"])
     
     salvar = st.form_submit_button("Salvar")
@@ -66,8 +66,17 @@ else:
         data_e = st.date_input("Data",pd.to_datetime(registro['data']).date())
         hora_e = st.time_input("Hora",value=None)
         cliente_e = st.selectbox("Cliente",clientes,index=clientes.index(registro['cliente']))
-        servico_e = st.selectbox("Serviço",servicos['nome'],index=servicos['nome'].tolist().index(registro['servico']))
-        valor_e = st.number_input("Valor",value=float(registro['valor']))
+        servico_e = st.multiselect("Serviço",servicos['nome'],default=servicos['nome'].tolist())
+
+        qtd = len(servico_e) # Quantidade de serviços selecionados
+        if qtd == 2:
+            desconto = 0.10
+        elif qtd >= 3:
+            desconto = 0.15
+        else:
+            desconto = 0
+        valor_e = st.number_input("Valor",value=float(registro['valor'])) * (1 - desconto) # Aplica desconto se houver
+
         pagamento_e = st.selectbox("Pagamento",["Dinheiro", "PIX", "Cartão"],
             index=["Dinheiro", "PIX", "Cartão"].index(registro['pagamento'])
         )
@@ -93,10 +102,7 @@ else:
 
         if excluir:
             with conn.cursor() as cur:
-                cur.execute(
-                    "DELETE FROM atendimentos WHERE id=%s",
-                    (selected_id,)
-                )
+                cur.execute("DELETE FROM atendimentos WHERE id=%s",(selected_id,))
                 conn.commit()
 
             st.warning("Atendimento excluído")
