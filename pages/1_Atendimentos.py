@@ -64,7 +64,7 @@ else:
 
     with st.form("editar_atendimento"):
         data_e = st.date_input("Data",pd.to_datetime(registro['data']).date())
-        # hora_e = st.time_input("Hora",value=None)
+        hora_e = st.time_input("Hora",value=None)
         cliente_e = st.selectbox("Cliente",clientes,index=clientes.index(registro['cliente']))
         servico_e = st.selectbox("Serviço",servicos['nome'],index=servicos['nome'].tolist().index(registro['servico']))
         valor_e = st.number_input("Valor",value=float(registro['valor']))
@@ -81,10 +81,10 @@ else:
                 cur.execute(
                     """
                     UPDATE atendimentos
-                    SET data=%s, cliente=%s, servico=%s, valor=%s, pagamento=%s
+                    SET data=%s, hora=%s, cliente=%s, servico=%s, valor=%s, pagamento=%s
                     WHERE id=%s
                     """,
-                    (data_e, cliente_e, servico_e, valor_e, pagamento_e, selected_id)
+                    (data_e, hora_e, cliente_e, servico_e, valor_e, pagamento_e, selected_id)
                 )
                 conn.commit()
 
