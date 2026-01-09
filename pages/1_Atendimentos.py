@@ -23,7 +23,7 @@ st.title("📅 Atendimentos")
 # Novo atendimento
 # -----------------------------
 with st.form("novo_atendimento"):
-    data = st.date_input("Data", date.today())
+    data = st.date_input("Data", date.today(), format="DD/MM/YYYY")
     hora = st.time_input("Hora", value=None)
     cliente = st.selectbox("Cliente", clientes)
     servico = st.multiselect("Serviço", servicos['nome'])
