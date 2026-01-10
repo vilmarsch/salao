@@ -64,22 +64,12 @@ else:
 
     with st.form("editar_atendimento"):
         data_e = st.date_input("Data",pd.to_datetime(registro['data']).date())
-        hora_e = st.time_input("Hora",value=None)
+        hora_e = st.text_input("Hora",registro['hora'])
         cliente_e = st.selectbox("Cliente",clientes,index=clientes.index(registro['cliente']))
         servico_e = st.multiselect("Serviço",servicos['nome'],default=servicos['nome'].tolist())
-
-        qtd = len(servico_e) # Quantidade de serviços selecionados
-        if qtd == 2:
-            desconto = 0.10
-        elif qtd >= 3:
-            desconto = 0.15
-        else:
-            desconto = 0
-        valor_e = st.number_input("Valor",value=float(registro['valor'])) * (1 - desconto) # Aplica desconto se houver
-
+        valor_e = sum(float(servicos.loc[servicos['nome'] == s, 'preco'].values[0]) for s in servico_e)
         pagamento_e = st.selectbox("Pagamento",["Dinheiro", "PIX", "Cartão"],
-            index=["Dinheiro", "PIX", "Cartão"].index(registro['pagamento'])
-        )
+            index=["Dinheiro", "PIX", "Cartão"].index(registro['pagamento']))
 
         col1, col2 = st.columns(2)
         atualizar = col1.form_submit_button("Atualizar")
