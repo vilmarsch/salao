@@ -69,32 +69,28 @@ with st.form("novo_atendimento"):
         st.success("Atendimento salvo")
         st.rerun()
 
-st.divider()
-
 # -----------------------------
 # Excluir atendimento
 # -----------------------------
-st.subheader("Excluir de Atendimentos")
+with st.expander("Excluir atendimento"):
 
-df = pd.read_sql("SELECT * FROM atendimentos ORDER BY data DESC",conn)
+    df = pd.read_sql("SELECT * FROM atendimentos ORDER BY data DESC",conn)
 
-if df.empty:
-    st.info("Nenhum atendimento cadastrado")
-else:
-    selected_id = st.selectbox("Selecione um atendimento para excluir",df['id'])
+    if df.empty:
+        st.info("Nenhum atendimento cadastrado")
+    else:
+        selected_id = st.selectbox("Selecione um atendimento para excluir",df['id'])
 
-    registro = df[df['id'] == selected_id].iloc[0]
+        registro = df[df['id'] == selected_id].iloc[0]
 
-excluir = st.button("Excluir")
-if excluir:
-    with conn.cursor() as cur:
-        cur.execute("DELETE FROM atendimentos WHERE id=%s",(selected_id,))
-        conn.commit()
+    excluir = st.button("Excluir")
+    if excluir:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM atendimentos WHERE id=%s",(selected_id,))
+            conn.commit()
 
-    st.warning("Atendimento excluído")
-    st.rerun()
-
-st.divider()
+        st.warning("Atendimento excluído")
+        st.rerun()
 # -----------------------------
 # Ver atendimentos
 # -----------------------------
