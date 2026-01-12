@@ -15,7 +15,7 @@ conn = get_conn()
 # Dados auxiliares
 # -----------------------------
 clientes = pd.read_sql( "SELECT nome FROM clientes ORDER BY nome", conn )['nome'].tolist()
-servicos = pd.read_sql( "SELECT nome, preco FROM servicos ORDER BY nome", conn )
+servicos = pd.read_sql("SELECT id, nome, preco FROM servicos ORDER BY nome", conn)  
 
 st.title("📅 Atendimentos")
 
@@ -27,20 +27,43 @@ with st.form("novo_atendimento"):
     hora = st.time_input("Hora", value=None)
     cliente = st.selectbox("Cliente", clientes)
     servico = st.multiselect("Serviço", servicos['nome'])
-    valor = sum(float(servicos.loc[servicos['nome'] == s, 'preco'].values[0]) for s in servico)
+
+    qtd = len(servico)
+    if qtd == 2:
+        desconto = 0.10
+    elif qtd >= 3:
+        desconto = 0.15
+    else:
+        desconto = 0
+    valor = sum(float(servicos.loc[servicos['nome'] == s, 'preco'].values[0]) for s in servico) * (1 - desconto)
+
     pagamento = st.selectbox("Forma de pagamento", ["Dinheiro", "PIX", "Cartão"])
     
     salvar = st.form_submit_button("Salvar")
+
     if salvar:
         with conn.cursor() as cur:
-            cur.execute(
-                """
+            cur.execute("""
                 INSERT INTO atendimentos
-                (data, hora, cliente, servico, valor, pagamento)
+                (data, hora, cliente, valor, pagamento, desconto)
                 VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                (data, hora, cliente, servico, valor, pagamento)
-            )
+                RETURNING id
+            """, (data, hora, cliente, valor, pagamento, desconto))
+
+            atendimento_id = cur.fetchone()[0]
+
+            map_servico = dict(zip(servicos['nome'], servicos['id']))
+            for nome_servico in servico:
+                servico_id = map_servico[nome_servico]
+                preco = float(
+                    servicos.loc[servicos['id'] == servico_id, 'preco'].iloc[0]
+                )
+
+                cur.execute("""
+                    INSERT INTO atendimento_servicos
+                    (atendimento_id, servico_id, valor)
+                    VALUES (%s, %s, %s)
+                """, (atendimento_id, servico_id, preco))
             conn.commit()
 
         st.success("Atendimento salvo")
@@ -49,51 +72,35 @@ with st.form("novo_atendimento"):
 st.divider()
 
 # -----------------------------
-# Histórico
+# Excluir atendimento
 # -----------------------------
-st.subheader("Histórico de Atendimentos")
+st.subheader("Excluir de Atendimentos")
 
 df = pd.read_sql("SELECT * FROM atendimentos ORDER BY data DESC",conn)
 
 if df.empty:
     st.info("Nenhum atendimento cadastrado")
 else:
-    selected_id = st.selectbox("Selecione um atendimento para editar/excluir",df['id'])
+    selected_id = st.selectbox("Selecione um atendimento para excluir",df['id'])
 
     registro = df[df['id'] == selected_id].iloc[0]
 
-    with st.form("editar_atendimento"):
-        data_e = st.date_input("Data",pd.to_datetime(registro['data']).date())
-        hora_e = st.text_input("Hora",registro['hora'])
-        cliente_e = st.selectbox("Cliente",clientes,index=clientes.index(registro['cliente']))
-        servico_e = st.multiselect("Serviço",servicos['nome'],default=servicos['nome'].tolist())
-        valor_e = sum(float(servicos.loc[servicos['nome'] == s, 'preco'].values[0]) for s in servico_e)
-        pagamento_e = st.selectbox("Pagamento",["Dinheiro", "PIX", "Cartão"],
-            index=["Dinheiro", "PIX", "Cartão"].index(registro['pagamento']))
+excluir = st.button("Excluir")
+if excluir:
+    with conn.cursor() as cur:
+        cur.execute("DELETE FROM atendimentos WHERE id=%s",(selected_id,))
+        conn.commit()
 
-        col1, col2 = st.columns(2)
-        atualizar = col1.form_submit_button("Atualizar")
-        excluir = col2.form_submit_button("Excluir")
+    st.warning("Atendimento excluído")
+    st.rerun()
 
-        if atualizar:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    UPDATE atendimentos
-                    SET data=%s, hora=%s, cliente=%s, servico=%s, valor=%s, pagamento=%s
-                    WHERE id=%s
-                    """,
-                    (data_e, hora_e, cliente_e, servico_e, valor_e, pagamento_e, selected_id)
-                )
-                conn.commit()
-
-            st.success("Atendimento atualizado")
-            st.rerun()
-
-        if excluir:
-            with conn.cursor() as cur:
-                cur.execute("DELETE FROM atendimentos WHERE id=%s",(selected_id,))
-                conn.commit()
-
-            st.warning("Atendimento excluído")
-            st.rerun()
+st.divider()
+# -----------------------------
+# Ver atendimentos
+# -----------------------------
+st.subheader("Ver Atendimentos")
+df = pd.read_sql("SELECT id, data, hora, cliente, valor, pagamento, desconto FROM atendimentos ORDER BY data DESC, hora DESC",conn)
+df["data"] = pd.to_datetime(df["data"]).dt.strftime("%d/%m/%Y")
+df["hora"] = pd.to_datetime(df["hora"], format="%H:%M:%S").dt.strftime("%H:%M")
+df["valor"] = df["valor"].apply(lambda x: f"R$ {x:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+st.dataframe(df, hide_index=True)
